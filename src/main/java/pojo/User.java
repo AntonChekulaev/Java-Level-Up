@@ -1,14 +1,15 @@
-package bank;
+package pojo;
 
 import java.io.Serializable;
+import java.util.List;
 
 public class User implements Serializable {
 
+    @CsvBindByPosition(position = 0)
     private int id;
     private String name;
     private String surname;
-    private int accountNumber;
-    private double accountMoney;
+    private List<Account> account;
     
     public int getId() {
         return id;
@@ -33,28 +34,19 @@ public class User implements Serializable {
     public void setSurname(String surname) {
         this.surname = surname;
     }
-    
-    public double getAccountMoney() {
-        return accountMoney;
+
+    public List<Account> getAccount() {
+        return account;
     }
 
-    public void setAccountMoney(double accountMoney) {
-        this.accountMoney = accountMoney;
+    public void setAccount(List<Account> account) {
+        this.account = account;
     }
 
-    public int getAccountNumber() {
-        return accountNumber;
-    }
-
-    public void setAccountNumber(int accountNumber) {
-        this.accountNumber = accountNumber;
-    }
-    
     @Override
     public String toString()
     {
-        return  id + ", " + name + ", " + surname + ", " + accountNumber 
-                + ", " + accountMoney;
+        return  id + ", " + name + ", " + surname + ", " + account.toString();
     }
 
 

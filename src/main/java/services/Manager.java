@@ -1,6 +1,7 @@
-package bank;
+package services;
 
 
+import pojo.User;
 import au.com.bytecode.opencsv.CSVReader;
 import au.com.bytecode.opencsv.CSVWriter;
 import au.com.bytecode.opencsv.bean.ColumnPositionMappingStrategy;
@@ -8,6 +9,7 @@ import au.com.bytecode.opencsv.bean.CsvToBean;
 import org.apache.log4j.Logger;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
@@ -34,7 +36,7 @@ public class Manager {
             case 1:
                 try {
                     createUser();
-                } catch (Exception e) {
+                } catch (IOException e) {
                     log.error("Ошибка в создании нового пользователя");
                     e.printStackTrace();
                 }
@@ -47,7 +49,7 @@ public class Manager {
                     } else {
                         log.error("Ошибка в удалении пользователя");
                     }
-                } catch (Exception e) {
+                } catch (IOException e) {
                     log.error("Ошибка в удалении пользователя");
                     e.printStackTrace();
                 }
@@ -55,7 +57,7 @@ public class Manager {
             case 3:
                 try {
                     updateUser();
-                } catch (Exception e) {
+                } catch (IOException e) {
                     log.error("Ошибка в изменении данных");
                     e.printStackTrace();
                 }
@@ -64,7 +66,7 @@ public class Manager {
             case 4:
                 try {
                     watchUsers(readUsers());
-                } catch (Exception e) {
+                } catch (IOException e) {
                     log.error("Ошибка в просмотре файла");
                     e.printStackTrace();
                 }
@@ -79,34 +81,24 @@ public class Manager {
         if (new File(csv).exists()) {
             // Перезаписывает файл
             CSVWriter writer = new CSVWriter(new FileWriter(csv, true), ',', CSVWriter.NO_QUOTE_CHARACTER);
-            try {
-                userInfo = addUserInfoCreate();
-                if (findUser(userInfo) != null) {
-                    writer.writeNext(new String[]{userInfo.toString()});
-                    writer.close();
-                }
-            } catch (Exception e) {
-                log.info("Ошибка при созданни пользователя");
+            userInfo = addUserInfoCreate();
+            if (findUser(userInfo) != null) {
+                writer.writeNext(new String[]{userInfo.toString()});
+                writer.close();
             }
         } else {
             // Создает новый файл
             CSVWriter writer = new CSVWriter(new FileWriter(csv), ',', CSVWriter.NO_QUOTE_CHARACTER);
-            try {
-                userInfo = addUserInfoCreate();
-                if (findUser(userInfo) != null) {
-                    writer.writeNext(new String[]{userInfo.toString()});
-                    writer.close();
-                }
-            } catch (Exception e) {
-                log.info("Ошибка при созданни пользователя");
+            userInfo = addUserInfoCreate();
+            if (findUser(userInfo) != null) {
+                writer.writeNext(new String[]{userInfo.toString()});
+                writer.close();
             }
-
-
         }
         return userInfo;
     }
 
-    private User findUser(User currentUser) throws Exception {
+    private User findUser(User currentUser) throws IOException {
         List listUsers = readUsers();
         for(Object object : listUsers) {
             User user = (User) object;
@@ -118,7 +110,7 @@ public class Manager {
         return currentUser;
     }
 
-    private User addUserInfoCreate() throws Exception {
+    private User addUserInfoCreate() {
         User currentUser = new User();
         Scanner scanner = new Scanner(System.in);
         log.info("Введите id, name, surname");
@@ -127,8 +119,6 @@ public class Manager {
         currentUser.setId(Integer.parseInt(userInfoList[0]));
         currentUser.setName(userInfoList[1]);
         currentUser.setSurname(userInfoList[2]);
-        currentUser.setAccountNumber(0);
-        currentUser.setAccountMoney(0.0);
         return currentUser;
     }
 
@@ -144,7 +134,7 @@ public class Manager {
         return -1;
     }
 
-    private User deleteUser(int id) throws Exception {
+    private User deleteUser(int id) throws IOException {
         List listUsers = readUsers();
         User delUser = null;
         // Поиск строки, которую нужно удалить
@@ -171,7 +161,7 @@ public class Manager {
         return delUser;
     }
 
-    private void updateUser() throws Exception {
+    private void updateUser() throws IOException {
         int userId = addUserInfo();
         if (userId != -1) {
             if (deleteUser(userId) != null) {
@@ -181,29 +171,32 @@ public class Manager {
         }
     }
 
-    private void watchUsers(List<String[]> listUsers) throws Exception {  
+    private void watchUsers(List<User> listUsers) {
         for(Object object : listUsers) {
             User user = (User) object;
             System.out.println(user);
         } 
     }
 
-    private List<String[]> readUsers() throws Exception {
-        CsvToBean csvToBean = new CsvToBean();
-        CSVReader csvReader = new CSVReader(new FileReader(csv));
-        // В листе находятся бины, полученные при работе с csv файлом
-        List listUsers = csvToBean.parse(setColumnMapping(), csvReader);
-        // Возвращаем лист, который нужно пройти циклом, чтобы получить каждый элемент
-        csvReader.close();
+    private List<User> readUsers() throws IOException {
+        List<User> listUsers = new ArrayList<>();
+        try{
+            FileInputStream fstream = new FileInputStream(csv);
+            BufferedReader br = new BufferedReader(new InputStreamReader(fstream));
+            String strLine;
+            String[] userInfoList;
+            while ((strLine = br.readLine()) != null){
+                userInfoList = strLine.split(", ", 0);
+                User user = new User();
+                user.setId(Integer.parseInt(userInfoList[0]));
+                user.setName(userInfoList[1]);
+                user.setSurname(userInfoList[2]);
+                listUsers.add(user);
+            }
+        }catch (IOException e){
+            System.out.println("Ошибка");
+        }
         return listUsers;
-    }
-
-    private static ColumnPositionMappingStrategy setColumnMapping() {
-        ColumnPositionMappingStrategy strategy = new ColumnPositionMappingStrategy();
-        strategy.setType(User.class);
-        String[] columns = new String[] {"id", "name", "surname", "accountNumber", "accountMoney"};
-        strategy.setColumnMapping(columns);
-        return strategy;
     }
 
 }

@@ -1,11 +1,11 @@
-package bank;
+package main;
 
 import org.apache.log4j.Logger;
+import services.AccountManager;
+import services.Manager;
+import services.SecurityGuard;
 
-import java.io.File;
-import java.util.List;
 import java.util.Scanner;
-import java.util.logging.Level;
 
 public class MainClass {
 
