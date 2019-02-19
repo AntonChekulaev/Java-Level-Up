@@ -1,11 +1,15 @@
 package services;
 
-import exceptions.myException;
+import exceptions.MyException;
+import main.DatabaseConnection;
 import pojo.Account;
 import pojo.User;
 import au.com.bytecode.opencsv.CSVWriter;
 
 import java.io.*;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 
 import org.apache.log4j.Logger;
@@ -74,7 +78,7 @@ public class AccountManager {
             case 6:
                 try {
                     testException();
-                } catch (myException e) {
+                } catch (MyException e) {
                     e.printStackTrace();
                 }
         }
@@ -224,8 +228,8 @@ public class AccountManager {
         });
     }
 
-    private void testException() throws myException {
-        throw new myException("Все сломалось");
+    private void testException() throws MyException {
+        throw new MyException("Все сломалось");
     }
 
 
@@ -277,36 +281,54 @@ public class AccountManager {
     }
 
     private List<User> readUsers() throws IOException {
+        DatabaseConnection connection = new DatabaseConnection();
+        String query = "select * from users";
         List<User> listUsers = new ArrayList<>();
-        FileInputStream fstream = new FileInputStream(csv);
-        BufferedReader br = new BufferedReader(new InputStreamReader(fstream));
-        String strLine;
-        String[] userInfoList;
-        while ((strLine = br.readLine()) != null) {
-            userInfoList = strLine.split(", ", 0);
-            User user = new User();
-            user.setId(Integer.parseInt(userInfoList[0]));
-            user.setName(userInfoList[1]);
-            user.setSurname(userInfoList[2]);
-            listUsers.add(user);
+
+        try {
+            Statement statement = connection.getConnection().createStatement();
+            ResultSet resultSet = statement.executeQuery(query);
+            while (resultSet.next()) {
+                User user = new User();
+                user.setId(resultSet.getInt("id"));
+                user.setName(resultSet.getString("name"));
+                user.setSurname(resultSet.getString("surname"));
+                listUsers.add(user);
+            }
+
+            connection.getConnection().close();
+
+        } catch (SQLException e) {
+            log.info("Запрос не выполнился");
+            e.printStackTrace();
         }
+
         return listUsers;
     }
 
     private List<Account> readAccounts() throws IOException {
+        DatabaseConnection connection = new DatabaseConnection();
+        String query = "select * from accounts";
         List<Account> listAccounts = new ArrayList<>();
-        FileInputStream streamAccount = new FileInputStream(accountCsv);
-        BufferedReader readerAccount = new BufferedReader(new InputStreamReader(streamAccount));
-        String strLineAccount;
-        String[] accountInfoList;
-        while ((strLineAccount = readerAccount.readLine()) != null) {
-            accountInfoList = strLineAccount.split(", ", 0);
-            Account account = new Account();
-            account.setUserId(Integer.parseInt(accountInfoList[0]));
-            account.setAccountNumber(Integer.parseInt(accountInfoList[1]));
-            account.setAccountMoney(Double.parseDouble(accountInfoList[2]));
-            listAccounts.add(account);
+
+        try {
+            Statement statement = connection.getConnection().createStatement();
+            ResultSet resultSet = statement.executeQuery(query);
+            while (resultSet.next()) {
+                Account account = new Account();
+                account.setUserId(resultSet.getInt("id"));
+                account.setAccountNumber(resultSet.getInt("accountNumber"));
+                account.setAccountMoney(resultSet.getDouble("accountMoney"));
+                listAccounts.add(account);
+            }
+
+            connection.getConnection().close();
+
+        } catch (SQLException e) {
+            log.info("Запрос не выполнился");
+            e.printStackTrace();
         }
+
         return listAccounts;
     }
 

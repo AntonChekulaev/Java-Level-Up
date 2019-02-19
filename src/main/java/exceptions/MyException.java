@@ -2,11 +2,11 @@ package exceptions;
 
 import java.io.IOException;
 
-public class myException extends Exception {
+public class MyException extends Exception {
 
     private String detail;
 
-    public myException(String a) {
+    public MyException(String a) {
         detail = a;
     }
 

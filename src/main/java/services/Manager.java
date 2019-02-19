@@ -1,6 +1,7 @@
 package services;
 
 
+import main.DatabaseConnection;
 import pojo.User;
 import au.com.bytecode.opencsv.CSVReader;
 import au.com.bytecode.opencsv.CSVWriter;
@@ -9,6 +10,9 @@ import au.com.bytecode.opencsv.bean.CsvToBean;
 import org.apache.log4j.Logger;
 
 import java.io.*;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -75,27 +79,27 @@ public class Manager {
     }
     
     // Метод createUser и AddUserInfo связаны и выполняются операцию CREATE
-    private User createUser() throws IOException {
-        //log.info(new File(".").getAbsolutePath());
-        User userInfo = null;
-        if (new File(csv).exists()) {
-            // Перезаписывает файл
-            CSVWriter writer = new CSVWriter(new FileWriter(csv, true), ',', CSVWriter.NO_QUOTE_CHARACTER);
-            userInfo = addUserInfoCreate();
-            if (findUser(userInfo) != null) {
-                writer.writeNext(new String[]{userInfo.toString()});
-                writer.close();
-            }
-        } else {
-            // Создает новый файл
-            CSVWriter writer = new CSVWriter(new FileWriter(csv), ',', CSVWriter.NO_QUOTE_CHARACTER);
-            userInfo = addUserInfoCreate();
-            if (findUser(userInfo) != null) {
-                writer.writeNext(new String[]{userInfo.toString()});
-                writer.close();
-            }
+    private void createUser() throws IOException {
+        DatabaseConnection connection = new DatabaseConnection();
+        User currentUser = new User();
+        Scanner scanner = new Scanner(System.in);
+        log.info("Введите name, surname");
+        String userInfo = scanner.nextLine();
+        String[] userInfoList = userInfo.split(", ", 0);
+        currentUser.setName(userInfoList[0]);
+        currentUser.setSurname(userInfoList[1]);
+        String query = "INSERT INTO users VALUES(" + currentUser.getName()
+                + ", " + currentUser.getSurname() + ")";
+
+        try {
+            Statement statement = connection.getConnection().createStatement();
+            ResultSet resultSet = statement.executeQuery(query);
+            log.info(resultSet);
+            connection.getConnection().close();
+        } catch (SQLException e) {
+            log.info("Запрос не выполнился");
+            e.printStackTrace();
         }
-        return userInfo;
     }
 
     private User findUser(User currentUser) throws IOException {
@@ -179,23 +183,28 @@ public class Manager {
     }
 
     private List<User> readUsers() {
+        DatabaseConnection connection = new DatabaseConnection();
+        String query = "select * from users";
         List<User> listUsers = new ArrayList<>();
-        try{
-            FileInputStream fstream = new FileInputStream(csv);
-            BufferedReader br = new BufferedReader(new InputStreamReader(fstream));
-            String strLine;
-            String[] userInfoList;
-            while ((strLine = br.readLine()) != null){
-                userInfoList = strLine.split(", ", 0);
+
+        try {
+            Statement statement = connection.getConnection().createStatement();
+            ResultSet resultSet = statement.executeQuery(query);
+            while (resultSet.next()) {
                 User user = new User();
-                user.setId(Integer.parseInt(userInfoList[0]));
-                user.setName(userInfoList[1]);
-                user.setSurname(userInfoList[2]);
+                user.setId(resultSet.getInt("id"));
+                user.setName(resultSet.getString("name"));
+                user.setSurname(resultSet.getString("surname"));
                 listUsers.add(user);
             }
-        }catch (IOException e){
-            System.out.println("Ошибка");
+
+            connection.getConnection().close();
+
+        } catch (SQLException e) {
+            log.info("Запрос не выполнился");
+            e.printStackTrace();
         }
+
         return listUsers;
     }
 
