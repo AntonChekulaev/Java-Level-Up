@@ -8,10 +8,7 @@ import au.com.bytecode.opencsv.bean.ColumnPositionMappingStrategy;
 import au.com.bytecode.opencsv.bean.CsvToBean;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 import org.apache.log4j.Logger;
 
@@ -20,6 +17,7 @@ public class AccountManager {
     private static final Logger log = Logger.getLogger(AccountManager.class);
 
     String csv = "src/main/resources/data.csv";
+    String accountCsv = "src/main/resources/account.csv";
 
     public AccountManager() {
         hello();
@@ -32,6 +30,7 @@ public class AccountManager {
         log.info("2 - Удалить счёт");
         log.info("3 - Положить средства на счёт");
         log.info("4 - Посмотреть профиль");
+        log.info("5 - Посмотреть все профили");
 
         log.info("Введите число: ");
         Scanner scanner = new Scanner(System.in);
@@ -41,122 +40,188 @@ public class AccountManager {
             case 1:
                 try {
                     addAccount();
-                } catch (Exception ex) {
-                    log.error("Ошибка в создании аккаунта");
+                } catch (IOException e) {
+                    log.error("Ошибка в создании аккаунта - " + e.getMessage());
                 }
                 break;
             case 2:
                 try {
                     deleteAccount();
-                } catch (Exception ex) {
-                    log.error("Ошибка в удалении аккаунта");
+                } catch (IOException e) {
+                    log.error("Ошибка в удалении аккаунта - " + e.getMessage());
                 }
                 break;
             case 3:
                 log.info("Введите количество внесённых средств в рублях: ");
                 try {
                     changeAccount(scanner.nextInt());
-                } catch (Exception ex) {
-                    log.error("Ошибка в создании аккаунта");
+                } catch (IOException e) {
+                    log.error("Ошибка в изменении аккаунта - " + e.getMessage());
                 }
                 break;
             case 4:
                 try {
-                    watchAccount();
-                } catch (Exception ex) {
-                    log.error("Ошибка в создании аккаунта");
+                    watchAccounts();
+                } catch (IOException e) {
+                    log.error("Ошибка в просмотре аккаунта - " + e.getMessage());
                 }
                 break;
+            case 5:
+                try {
+                    getInformationAboutUsers();
+                } catch (IOException e){
+                    log.error("Ошибка в просмотре аккаунтов - " + e.getMessage());
+                }
         }
     }
 
     private void addAccount() throws IOException {
-        /*
-            User currentUser = findUser();
+        User currentUser = findUser();
+        if (currentUser != null) {
             int min = 10000000;
             int max = 99999999;
-            if (currentUser.getAccountNumber() == 0) {
-                deleteUser(currentUser.getId());
-                currentUser.setAccountNumber(min + (int) (Math.random() * max));
-                currentUser.setAccountMoney(0);
-                CSVWriter writer = new CSVWriter(new FileWriter(csv), ',', CSVWriter.NO_QUOTE_CHARACTER);
-                writer.writeNext(new String[]{currentUser.toString()});
+            Account account = new Account();
+            account.setUserId(currentUser.getId());
+            account.setAccountNumber(min + (int) (Math.random() * max));
+            account.setAccountMoney(0.0);
+            if (new File(accountCsv).exists()) {
+                // Перезаписывает файл
+                CSVWriter writer = new CSVWriter(new FileWriter(accountCsv, true), ',', CSVWriter.NO_QUOTE_CHARACTER);
+                writer.writeNext(new String[]{account.toString()});
                 writer.close();
-                log.info("Ваш номер счёта - " + currentUser.getAccountNumber());
             } else {
-                log.error("У вас уже имеется другой номер счёта");
-            }
-        */
-
-        User currentUser = findUser();
-        int min = 10000000;
-        int max = 99999999;
-        List<Account> acc = currentUser.getAccount();
-        Scanner scanner = new Scanner(System.in);
-        String newAccount = scanner.nextLine();
-        String[] newAccountArray = newAccount.split(", ", 0);
-        Account account = new Account();
-        account.setAccountNumber(Integer.parseInt(newAccountArray[0]));
-        account.setAccountMoney(Integer.parseInt(newAccountArray[1]));
-        acc.add(account);
-    }
-
-    private User findAccountReturnUser(int accountNumber) throws IOException {
-        List<String[]> listUsers = readUsers();
-        List<Account> listAccount;
-        for(Object object : listUsers) {
-            User user = (User) object;
-            listAccount = user.getAccount();
-            for (Account account : listAccount) {
-                if (account.getAccountNumber() == accountNumber) {
-                    return user;
-                }
+                // Создает новый файл
+                CSVWriter writer = new CSVWriter(new FileWriter(accountCsv), ',', CSVWriter.NO_QUOTE_CHARACTER);
+                writer.writeNext(new String[]{account.toString()});
+                writer.close();
             }
         }
-        log.info("К сожалению, такого пользователя нет в базе данных");
-        return null;
     }
 
     private void deleteAccount() throws IOException {
+        Account delAccount = null;
+        List<Account> listAccounts = readAccounts();
         User currentUser = findUser();
-        if (currentUser.getAccountNumber() != 0) {
-            deleteUser(currentUser.getId());
-            currentUser.setAccountNumber(0);
-            currentUser.setAccountMoney(0.0);
-            CSVWriter writer = new CSVWriter(new FileWriter(csv), ',', CSVWriter.NO_QUOTE_CHARACTER);
-            writer.writeNext(new String[]{currentUser.toString()});
+        watchAccounts(currentUser);
+        Scanner scanner = new Scanner(System.in);
+        log.info("Введите номер счёта");
+        String currentAccount = scanner.nextLine();
+
+        for (Account account : listAccounts) {
+            if (account.getUserId() == currentUser.getId() &&
+                    account.getAccountNumber() == Integer.parseInt(currentAccount)) {
+                delAccount = account;
+            }
+        }
+
+        listAccounts.remove(delAccount);
+
+        if (delAccount != null) {
+            CSVWriter writer = new CSVWriter(new FileWriter(accountCsv), ',', CSVWriter.NO_QUOTE_CHARACTER);
+            if (!listAccounts.isEmpty()) {
+                for(Account account : listAccounts ) {
+                    writer.writeNext(new String[]{account.toString()});
+                }
+            }
             writer.close();
             log.info("Аккаунт успешно удалён");
         } else {
-            log.error("Вашего аккаунта уже не существует");
+            throw new IOException("Вы ещё не создали аккаунт");
         }
 
     }
 
     //Для добавления средств (изменение)
-    private void changeAccount(double account) throws IOException {
+    private void changeAccount(double acсountMoney) throws IOException {
+        Account currentAccount = null;
+        List<Account> listAccounts = readAccounts();
         User currentUser = findUser();
-        if (currentUser.getAccountNumber() != 0) {
-            deleteUser(currentUser.getId());
-            currentUser.setAccountMoney(currentUser.getAccountMoney() + account);
-            CSVWriter writer = new CSVWriter(new FileWriter(csv), ',', CSVWriter.NO_QUOTE_CHARACTER);
-            writer.writeNext(new String[]{currentUser.toString()});
+        watchAccounts(currentUser);
+        Scanner scanner = new Scanner(System.in);
+        log.info("Введите номер счёта");
+        String currentAccountNumber = scanner.nextLine();
+
+        for (Account account : listAccounts) {
+            if (account.getUserId() == currentUser.getId() &&
+                    account.getAccountNumber() == Integer.parseInt(currentAccountNumber)) {
+                currentAccount = account;
+            }
+        }
+
+        listAccounts.remove(currentAccount);
+        currentAccount.setAccountMoney(currentAccount.getAccountMoney() + acсountMoney);
+        listAccounts.add(currentAccount);
+
+        if (currentAccount != null) {
+            CSVWriter writer = new CSVWriter(new FileWriter(accountCsv), ',', CSVWriter.NO_QUOTE_CHARACTER);
+            if (!listAccounts.isEmpty()) {
+                for(Account account : listAccounts ) {
+                    writer.writeNext(new String[]{account.toString()});
+                }
+            }
             writer.close();
             log.info("Аккаунт успешно изменён");
         } else {
-            log.error("Вы ещё не завели счёт");
+            throw new IOException("Вы ещё не создали аккаунт");
         }
     }
 
-    private void watchAccount() throws IOException {
+    private void watchAccounts() throws IOException {
+        int count = 0;
         User currentUser = findUser();
-        if (currentUser != null && currentUser.getAccountNumber() != 0) {
-            log.info("Ваш профиль : ");
-            log.info("Номер аккаунта - " + currentUser.getAccountNumber());
-            log.info("Денежные средства на аккаунте - " + currentUser.getAccountMoney());
-        } else {
-            log.error("Вы ещё не завели счёт");
+        List<Account> listAccounts = readAccounts();
+        for (Account account : listAccounts) {
+            if (currentUser.getId() == account.getUserId()) {
+                count = count + 1;
+                log.info("Профиль " + currentUser.getSurname() + " :");
+                log.info("Номер аккаунта - " + account.getAccountNumber());
+                log.info("Денежные средства на аккаунте - " + account.getAccountMoney());
+            }
         }
+        if (count == 0) {
+            throw new IOException("Вы ещё не создали аккаунт");
+        }
+    }
+
+    private void watchAccounts(User currentUser) throws IOException {
+        int count = 0;
+        List<Account> listAccounts = readAccounts();
+        for (Account account : listAccounts) {
+            if (currentUser.getId() == account.getUserId()) {
+                count = count + 1;
+                log.info("Профиль " + currentUser.getSurname() + " :");
+                log.info("Номер аккаунта - " + account.getAccountNumber());
+                log.info("Денежные средства на аккаунте - " + account.getAccountMoney());
+            }
+        }
+        if (count > 0) {
+            throw new IOException("Вы ещё не создали аккаунт");
+        }
+    }
+
+    private void getInformationAboutUsers() throws IOException {
+        Map<Integer, User> infoUsers = convertListUsersToMap
+                (readUsersWithAccounts(readUsers(), readAccounts()));
+        log.info("Список всех пользователей: ");
+        infoUsers.forEach((key, value) -> {
+            log.info("");
+            log.info("Пользователь - id = " + value.getId() +
+                    ", Имя = " + value.getName() + ", Фамилия = " + value.getSurname());
+            log.info("Счета этого пользователя");
+            if (value.getAccount() == null) {
+                log.info("У этого пользователя нет счетов");
+            } else {
+                for(Account account : value.getAccount()) {
+                    log.info("Номер счёта - " + account.getAccountNumber());
+                    log.info("Количество денежных средств - " + account.getAccountMoney());
+                }
+            }
+            log.info("");
+        });
+    }
+
+    private void testException() throws IOException {
+        throw new IOException("Тест прошёл успешно");
     }
 
 
@@ -169,33 +234,9 @@ public class AccountManager {
         return Integer.parseInt(userInfo);
     }
 
-    private void deleteUser(int id) throws IOException {
-        List listUsers = readUsers();
-        User delUser = null;
-        // Поиск строки, которую нужно удалить
-        for(Object object : listUsers) {
-            User user = (User) object;
-            if (user.getId() == id) {
-                delUser = user;
-                break;
-            }
-            listUsers.remove(delUser);
-        }
-        CSVWriter writer = new CSVWriter(new FileWriter(csv), ',', CSVWriter.NO_QUOTE_CHARACTER);
-        if (!listUsers.isEmpty()) {
-            for(Object object : listUsers) {
-                User user = (User) object;
-                writer.writeNext(new String[]{user.toString()});
-            }
-        } else {
-            log.info("Нет данных");
-        }
-        writer.close();
-    }
-
     private User findUser() throws IOException {
         int currentUserId = addUserInfo();
-        List listUsers = readUsers();
+        List listUsers = readUsersWithAccounts(readUsers(), readAccounts());
         for(Object object : listUsers) {
             User user = (User) object;
             if (currentUserId == user.getId()) {
@@ -207,33 +248,62 @@ public class AccountManager {
         return null;
     }
 
-    private List<User> readUsers() throws IOException {
-        List<User> listUsers = new ArrayList<>();
-        try{
-            FileInputStream fstream = new FileInputStream(csv);
-            BufferedReader br = new BufferedReader(new InputStreamReader(fstream));
-            String strLine;
-            String[] userInfoList;
-            while ((strLine = br.readLine()) != null){
-                userInfoList = strLine.split(", ", 0);
-                User user = new User();
-                user.setId(Integer.parseInt(userInfoList[0]));
-                user.setName(userInfoList[1]);
-                user.setSurname(userInfoList[2]);
-                List<Account> listAccount = new ArrayList<>();
-                for (int i = 4; i < userInfoList.length; i++) {
-                    Account account = new Account();
-                    account.setAccountNumber(Integer.parseInt(userInfoList[i-1]));
-                    account.setAccountMoney(Double.parseDouble(userInfoList[i]));
-                    listAccount.add(account);
+    private Map<Integer, User> convertListUsersToMap(List<User> listUsers) {
+        Map<Integer, User> info = new HashMap<Integer, User>();
+        for (User user : listUsers) {
+            info.put(user.getId(), user);
+        }
+        return info;
+    }
+
+    //методы для работы с чтением файлов
+
+    private List<User> readUsersWithAccounts(List<User> listUsers, List<Account> listAccounts) throws IOException {
+        List<Account> userListAccounts = new ArrayList<>();
+        for (User user : listUsers) {
+            for (Account account : listAccounts) {
+                if (user.getId() == account.getUserId()) {
+                    userListAccounts.add(account);
                 }
-                user.setAccount(listAccount);
-                listUsers.add(user);
             }
-        }catch (IOException e){
-            System.out.println("Ошибка");
+            user.setAccount(userListAccounts);
+            userListAccounts = null;
         }
         return listUsers;
+    }
+
+    private List<User> readUsers() throws IOException {
+        List<User> listUsers = new ArrayList<>();
+        FileInputStream fstream = new FileInputStream(csv);
+        BufferedReader br = new BufferedReader(new InputStreamReader(fstream));
+        String strLine;
+        String[] userInfoList;
+        while ((strLine = br.readLine()) != null) {
+            userInfoList = strLine.split(", ", 0);
+            User user = new User();
+            user.setId(Integer.parseInt(userInfoList[0]));
+            user.setName(userInfoList[1]);
+            user.setSurname(userInfoList[2]);
+            listUsers.add(user);
+        }
+        return listUsers;
+    }
+
+    private List<Account> readAccounts() throws IOException {
+        List<Account> listAccounts = new ArrayList<>();
+        FileInputStream streamAccount = new FileInputStream(accountCsv);
+        BufferedReader readerAccount = new BufferedReader(new InputStreamReader(streamAccount));
+        String strLineAccount;
+        String[] accountInfoList;
+        while ((strLineAccount = readerAccount.readLine()) != null) {
+            accountInfoList = strLineAccount.split(", ", 0);
+            Account account = new Account();
+            account.setUserId(Integer.parseInt(accountInfoList[0]));
+            account.setAccountNumber(Integer.parseInt(accountInfoList[1]));
+            account.setAccountMoney(Double.parseDouble(accountInfoList[2]));
+            listAccounts.add(account);
+        }
+        return listAccounts;
     }
 
 }

@@ -5,7 +5,6 @@ import java.util.List;
 
 public class User implements Serializable {
 
-    @CsvBindByPosition(position = 0)
     private int id;
     private String name;
     private String surname;
@@ -46,7 +45,7 @@ public class User implements Serializable {
     @Override
     public String toString()
     {
-        return  id + ", " + name + ", " + surname + ", " + account.toString();
+        return  id + ", " + name + ", " + surname;
     }
 
 
