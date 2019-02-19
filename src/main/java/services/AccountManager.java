@@ -105,18 +105,17 @@ public class AccountManager {
         watchAccounts(currentUser);
         Scanner scanner = new Scanner(System.in);
         log.info("Введите номер счёта");
-        String currentAccount = scanner.nextLine();
+        int currentAccount = scanner.nextInt();
 
         for (Account account : listAccounts) {
             if (account.getUserId() == currentUser.getId() &&
-                    account.getAccountNumber() == Integer.parseInt(currentAccount)) {
+                    account.getAccountNumber() == currentAccount) {
                 delAccount = account;
             }
         }
 
-        listAccounts.remove(delAccount);
-
         if (delAccount != null) {
+            listAccounts.remove(delAccount);
             CSVWriter writer = new CSVWriter(new FileWriter(accountCsv), ',', CSVWriter.NO_QUOTE_CHARACTER);
             if (!listAccounts.isEmpty()) {
                 for(Account account : listAccounts ) {
@@ -126,7 +125,7 @@ public class AccountManager {
             writer.close();
             log.info("Аккаунт успешно удалён");
         } else {
-            throw new IOException("Вы ещё не создали аккаунт");
+            throw new IOException("Не найдены аккаунты");
         }
 
     }
@@ -179,7 +178,7 @@ public class AccountManager {
             }
         }
         if (count == 0) {
-            throw new IOException("Вы ещё не создали аккаунт");
+            log.info("Вы ещё не создали аккаунт");
         }
     }
 
@@ -195,7 +194,7 @@ public class AccountManager {
             }
         }
         if (count > 0) {
-            throw new IOException("Вы ещё не создали аккаунт");
+            log.info("Вы ещё не создали аккаунт");
         }
     }
 
@@ -267,7 +266,7 @@ public class AccountManager {
                 }
             }
             user.setAccount(userListAccounts);
-            userListAccounts = null;
+            userListAccounts = new ArrayList<>();
         }
         return listUsers;
     }

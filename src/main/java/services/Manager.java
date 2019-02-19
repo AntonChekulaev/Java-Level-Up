@@ -178,7 +178,7 @@ public class Manager {
         } 
     }
 
-    private List<User> readUsers() throws IOException {
+    private List<User> readUsers() {
         List<User> listUsers = new ArrayList<>();
         try{
             FileInputStream fstream = new FileInputStream(csv);
