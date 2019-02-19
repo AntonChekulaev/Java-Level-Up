@@ -1,11 +1,9 @@
 package services;
 
+import exceptions.myException;
 import pojo.Account;
 import pojo.User;
-import au.com.bytecode.opencsv.CSVReader;
 import au.com.bytecode.opencsv.CSVWriter;
-import au.com.bytecode.opencsv.bean.ColumnPositionMappingStrategy;
-import au.com.bytecode.opencsv.bean.CsvToBean;
 
 import java.io.*;
 import java.util.*;
@@ -31,6 +29,7 @@ public class AccountManager {
         log.info("3 - Положить средства на счёт");
         log.info("4 - Посмотреть профиль");
         log.info("5 - Посмотреть все профили");
+        log.info("6 - Тест исключения");
 
         log.info("Введите число: ");
         Scanner scanner = new Scanner(System.in);
@@ -71,6 +70,12 @@ public class AccountManager {
                     getInformationAboutUsers();
                 } catch (IOException e){
                     log.error("Ошибка в просмотре аккаунтов - " + e.getMessage());
+                }
+            case 6:
+                try {
+                    testException();
+                } catch (myException e) {
+                    e.printStackTrace();
                 }
         }
     }
@@ -125,7 +130,7 @@ public class AccountManager {
             writer.close();
             log.info("Аккаунт успешно удалён");
         } else {
-            throw new IOException("Не найдены аккаунты");
+            throw new IOException("Не найдено такого аккаунта");
         }
 
     }
@@ -219,8 +224,8 @@ public class AccountManager {
         });
     }
 
-    private void testException() throws IOException {
-        throw new IOException("Тест прошёл успешно");
+    private void testException() throws myException {
+        throw new myException("Все сломалось");
     }
 
 

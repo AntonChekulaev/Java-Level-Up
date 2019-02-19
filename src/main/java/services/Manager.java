@@ -66,7 +66,7 @@ public class Manager {
             case 4:
                 try {
                     watchUsers(readUsers());
-                } catch (IOException e) {
+                } catch (Exception e) {
                     log.error("Ошибка в просмотре файла");
                     e.printStackTrace();
                 }
