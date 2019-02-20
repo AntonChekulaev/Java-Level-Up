@@ -17,29 +17,6 @@ public class MainClass {
 
     public static void main(String args[]){
 
-        // Подключение к базе данных
-        DatabaseConnection connection = new DatabaseConnection();
-
-        String query = "select * from users";
-
-        try {
-            Statement statement = connection.getConnection().createStatement();
-            ResultSet resultSet = statement.executeQuery(query);
-            while (resultSet.next()) {
-                User user = new User();
-                user.setId(resultSet.getInt("id"));
-                user.setName(resultSet.getString("name"));
-                user.setSurname(resultSet.getString("surname"));
-                log.info(user);
-            }
-
-            connection.getConnection().close();
-
-        } catch (SQLException e) {
-            log.info("Запрос не выполнился");
-            e.printStackTrace();
-        }
-
         while (true) {
             log.info("1 - Поговорить с охранником");
             log.info("2 - Поговорить с менеджером");

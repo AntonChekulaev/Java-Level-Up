@@ -38,34 +38,17 @@ public class Manager {
         int numberManager = scanner.nextInt();
         switch (numberManager) {
             case 1:
-                try {
-                    createUser();
-                } catch (IOException e) {
-                    log.error("Ошибка в создании нового пользователя");
-                    e.printStackTrace();
-                }
+                createUser();
                 break;
             case 2:
-                try {
-                    int id = addUserInfo();
-                    if (id != -1) {
-                        deleteUser(id);
-                    } else {
-                        log.error("Ошибка в удалении пользователя");
-                    }
-                } catch (IOException e) {
-                    log.error("Ошибка в удалении пользователя");
-                    e.printStackTrace();
-                }
+                log.info("Введите id ");
+                int id = scanner.nextInt();
+                deleteUser(id);
                 break;
             case 3:
-                try {
-                    updateUser();
-                } catch (IOException e) {
-                    log.error("Ошибка в изменении данных");
-                    e.printStackTrace();
-                }
-                log.info("Изменение выполнено без ошибок");
+                User currentUser = createUserModel();
+                updateUser(currentUser.getId(), currentUser.getName(),
+                        currentUser.getSurname());
                 break;
             case 4:
                 try {
@@ -77,9 +60,10 @@ public class Manager {
                 break;
         }
     }
-    
-    // Метод createUser и AddUserInfo связаны и выполняются операцию CREATE
-    private void createUser() throws IOException {
+
+    // CRUD методы
+
+    private void createUser() {
         DatabaseConnection connection = new DatabaseConnection();
         User currentUser = new User();
         Scanner scanner = new Scanner(System.in);
@@ -88,13 +72,13 @@ public class Manager {
         String[] userInfoList = userInfo.split(", ", 0);
         currentUser.setName(userInfoList[0]);
         currentUser.setSurname(userInfoList[1]);
-        String query = "INSERT INTO users VALUES(" + currentUser.getName()
-                + ", " + currentUser.getSurname() + ")";
+        String query = "INSERT INTO users (name, surname) VALUES (\'" + currentUser.getName()
+                + "\', \'" + currentUser.getSurname() + "\')";
 
         try {
+            log.info(query);
             Statement statement = connection.getConnection().createStatement();
-            ResultSet resultSet = statement.executeQuery(query);
-            log.info(resultSet);
+            statement.execute(query);
             connection.getConnection().close();
         } catch (SQLException e) {
             log.info("Запрос не выполнился");
@@ -102,84 +86,31 @@ public class Manager {
         }
     }
 
-    private User findUser(User currentUser) throws IOException {
-        List listUsers = readUsers();
-        for(Object object : listUsers) {
-            User user = (User) object;
-            if (currentUser.getId() == user.getId()) {
-                log.info("Пользователь находится в базе данных");
-                return null;
-            }
-        }
-        return currentUser;
-    }
-
-    private User addUserInfoCreate() {
-        User currentUser = new User();
-        Scanner scanner = new Scanner(System.in);
-        log.info("Введите id, name, surname");
-        String userInfo = scanner.nextLine();
-        String[] userInfoList = userInfo.split(", ", 0);
-        currentUser.setId(Integer.parseInt(userInfoList[0]));
-        currentUser.setName(userInfoList[1]);
-        currentUser.setSurname(userInfoList[2]);
-        return currentUser;
-    }
-
-    private int addUserInfo() {
-        Scanner scanner = new Scanner(System.in);
-        log.info("Введите id");
-        String userInfo = scanner.nextLine();
+    private void deleteUser(int id) {
+        DatabaseConnection connection = new DatabaseConnection();
+        String query = "DELETE FROM users WHERE id = " + id;
         try {
-            return Integer.parseInt(userInfo);
-        } catch (Exception e) {
-            log.error("Некорректные данные");
-        }
-        return -1;
-    }
-
-    private User deleteUser(int id) throws IOException {
-        List listUsers = readUsers();
-        User delUser = null;
-        // Поиск строки, которую нужно удалить
-        for(Object object : listUsers) {
-            User user = (User) object;
-            if (user.getId() == id) {
-                delUser = user;
-            }
-        }
-        if (delUser != null) {
-            listUsers.remove(delUser);
-        } else {
-            log.error("Нет пользователя в базе");
-        }
-
-        CSVWriter writer = new CSVWriter(new FileWriter(csv), ',', CSVWriter.NO_QUOTE_CHARACTER);
-        if (!listUsers.isEmpty()) {
-            for(Object object : listUsers) {
-                User user = (User) object;
-                writer.writeNext(new String[]{user.toString()});
-            }
-        }
-        writer.close();
-        return delUser;
-    }
-
-    private void updateUser() throws IOException {
-        int userId = addUserInfo();
-        if (userId != -1) {
-            if (deleteUser(userId) != null) {
-                log.info("Введите новые значения");
-                createUser();
-            }
+            Statement statement = connection.getConnection().createStatement();
+            statement.execute(query);
+            connection.getConnection().close();
+        } catch (SQLException e) {
+            log.info("Запрос не выполнился");
+            e.printStackTrace();
         }
     }
 
-    private void watchUsers(List<User> listUsers) {
-        for(Object object : listUsers) {
-            User user = (User) object;
-            System.out.println(user);
-        } 
+    private void updateUser(int id, String name, String surname) {
+        DatabaseConnection connection = new DatabaseConnection();
+        String query = "UPDATE users SET name = \'" + name +
+                "\', surname = \'" + surname + "\' WHERE id = " + id;
+        try {
+            Statement statement = connection.getConnection().createStatement();
+            statement.execute(query);
+            connection.getConnection().close();
+        } catch (SQLException e) {
+            log.info("Запрос не выполнился");
+            e.printStackTrace();
+        }
     }
 
     private List<User> readUsers() {
@@ -206,6 +137,28 @@ public class Manager {
         }
 
         return listUsers;
+    }
+
+    // Вспомогательные методы
+
+    private User createUserModel() {
+        User currentUser = new User();
+        log.info("Введите id, name, surname");
+        Scanner scan = new Scanner(System.in);
+        String userInfo = scan.nextLine();
+        String[] userInfoList = userInfo.split(", ", 0);
+        currentUser.setId(Integer.parseInt(userInfoList[0]));
+        currentUser.setName(userInfoList[1]);
+        currentUser.setSurname(userInfoList[2]);
+        return currentUser;
+    }
+
+    private void watchUsers(List<User> listUsers) {
+        for(Object object : listUsers) {
+            User user = (User) object;
+            log.info("Пользователь - id = " + user.getId() + ", имя = " +
+                    user.getName() + ", фамилия = " + user.getSurname());
+        }
     }
 
 }

@@ -281,9 +281,10 @@ public class AccountManager {
     }
 
     private List<User> readUsers() throws IOException {
-        DatabaseConnection connection = new DatabaseConnection();
-        String query = "select * from users";
         List<User> listUsers = new ArrayList<>();
+        DatabaseConnection connection = new DatabaseConnection();
+
+        String query = "select * from users";
 
         try {
             Statement statement = connection.getConnection().createStatement();
@@ -293,7 +294,7 @@ public class AccountManager {
                 user.setId(resultSet.getInt("id"));
                 user.setName(resultSet.getString("name"));
                 user.setSurname(resultSet.getString("surname"));
-                listUsers.add(user);
+                log.info(user);
             }
 
             connection.getConnection().close();
@@ -301,25 +302,32 @@ public class AccountManager {
         } catch (SQLException e) {
             log.info("Запрос не выполнился");
             e.printStackTrace();
+        } finally {
+            try {
+                connection.getConnection().close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
 
         return listUsers;
     }
 
-    private List<Account> readAccounts() throws IOException {
-        DatabaseConnection connection = new DatabaseConnection();
-        String query = "select * from accounts";
+    private List<Account> readAccounts() {
         List<Account> listAccounts = new ArrayList<>();
+        DatabaseConnection connection = new DatabaseConnection();
+
+        String query = "select * from accounts";
 
         try {
             Statement statement = connection.getConnection().createStatement();
             ResultSet resultSet = statement.executeQuery(query);
             while (resultSet.next()) {
-                Account account = new Account();
-                account.setUserId(resultSet.getInt("id"));
-                account.setAccountNumber(resultSet.getInt("accountNumber"));
-                account.setAccountMoney(resultSet.getDouble("accountMoney"));
-                listAccounts.add(account);
+                User user = new User();
+                user.setId(resultSet.getInt("accountNumber"));
+                user.setName(resultSet.getString("userId"));
+                user.setSurname(resultSet.getString("accountMoney"));
+                log.info(user);
             }
 
             connection.getConnection().close();
@@ -327,6 +335,12 @@ public class AccountManager {
         } catch (SQLException e) {
             log.info("Запрос не выполнился");
             e.printStackTrace();
+        } finally {
+            try {
+                connection.getConnection().close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
 
         return listAccounts;
