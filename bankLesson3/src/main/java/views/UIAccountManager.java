@@ -17,7 +17,7 @@ public class UIAccountManager {
 
     AccountManager accountManager = new AccountManager();
 
-    private static final Logger log = Logger.getLogger(Manager.class);
+    private static final Logger log = Logger.getLogger(UIAccountManager.class);
 
     public UIAccountManager() {
         hello();

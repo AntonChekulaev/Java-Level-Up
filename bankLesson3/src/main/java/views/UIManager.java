@@ -13,7 +13,7 @@ public class UIManager {
 
     Manager manager = new Manager();
 
-    private static final Logger log = Logger.getLogger(Manager.class);
+    private static final Logger log = Logger.getLogger(UIManager.class);
 
     public UIManager() {
         hello();
