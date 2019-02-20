@@ -32,10 +32,6 @@ public class DatabaseConnection {
                     properties.getProperty("dbuser"),
                     properties.getProperty("dbpassword"));
 
-            if(!connection.isClosed()) {
-                log.info("Соединение с базой установлено");
-            }
-
         } catch (SQLException e) {
             log.error("Не удалось загрузить класс драйвера!");
         }

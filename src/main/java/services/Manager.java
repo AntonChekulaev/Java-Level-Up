@@ -64,7 +64,6 @@ public class Manager {
     // CRUD методы
 
     private void createUser() {
-        DatabaseConnection connection = new DatabaseConnection();
         User currentUser = new User();
         Scanner scanner = new Scanner(System.in);
         log.info("Введите name, surname");
@@ -76,7 +75,7 @@ public class Manager {
                 + "\', \'" + currentUser.getSurname() + "\')";
 
         try {
-            log.info(query);
+            DatabaseConnection connection = new DatabaseConnection();
             Statement statement = connection.getConnection().createStatement();
             statement.execute(query);
             connection.getConnection().close();
@@ -87,9 +86,9 @@ public class Manager {
     }
 
     private void deleteUser(int id) {
-        DatabaseConnection connection = new DatabaseConnection();
         String query = "DELETE FROM users WHERE id = " + id;
         try {
+            DatabaseConnection connection = new DatabaseConnection();
             Statement statement = connection.getConnection().createStatement();
             statement.execute(query);
             connection.getConnection().close();
@@ -100,10 +99,10 @@ public class Manager {
     }
 
     private void updateUser(int id, String name, String surname) {
-        DatabaseConnection connection = new DatabaseConnection();
         String query = "UPDATE users SET name = \'" + name +
                 "\', surname = \'" + surname + "\' WHERE id = " + id;
         try {
+            DatabaseConnection connection = new DatabaseConnection();
             Statement statement = connection.getConnection().createStatement();
             statement.execute(query);
             connection.getConnection().close();
@@ -114,11 +113,11 @@ public class Manager {
     }
 
     private List<User> readUsers() {
-        DatabaseConnection connection = new DatabaseConnection();
         String query = "select * from users";
         List<User> listUsers = new ArrayList<>();
 
         try {
+            DatabaseConnection connection = new DatabaseConnection();
             Statement statement = connection.getConnection().createStatement();
             ResultSet resultSet = statement.executeQuery(query);
             while (resultSet.next()) {

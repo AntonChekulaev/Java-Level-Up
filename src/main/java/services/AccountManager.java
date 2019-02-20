@@ -43,14 +43,14 @@ public class AccountManager {
             case 1:
                 try {
                     addAccount();
-                } catch (IOException e) {
+                } catch (SQLException e) {
                     log.error("Ошибка в создании аккаунта - " + e.getMessage());
                 }
                 break;
             case 2:
                 try {
                     deleteAccount();
-                } catch (IOException e) {
+                } catch (SQLException e) {
                     log.error("Ошибка в удалении аккаунта - " + e.getMessage());
                 }
                 break;
@@ -58,33 +58,31 @@ public class AccountManager {
                 log.info("Введите количество внесённых средств в рублях: ");
                 try {
                     changeAccount(scanner.nextInt());
-                } catch (IOException e) {
-                    log.error("Ошибка в изменении аккаунта - " + e.getMessage());
+                } catch (SQLException e) {
+                    e.printStackTrace();
                 }
                 break;
             case 4:
                 try {
                     watchAccounts();
                 } catch (IOException e) {
-                    log.error("Ошибка в просмотре аккаунта - " + e.getMessage());
+                    e.printStackTrace();
                 }
                 break;
             case 5:
-                try {
-                    getInformationAboutUsers();
-                } catch (IOException e){
-                    log.error("Ошибка в просмотре аккаунтов - " + e.getMessage());
-                }
+                getInformationAboutUsers();
+                break;
             case 6:
                 try {
                     testException();
                 } catch (MyException e) {
                     e.printStackTrace();
                 }
+                break;
         }
     }
 
-    private void addAccount() throws IOException {
+    private void addAccount() throws SQLException {
         User currentUser = findUser();
         if (currentUser != null) {
             int min = 10000000;
@@ -93,84 +91,63 @@ public class AccountManager {
             account.setUserId(currentUser.getId());
             account.setAccountNumber(min + (int) (Math.random() * max));
             account.setAccountMoney(0.0);
-            if (new File(accountCsv).exists()) {
-                // Перезаписывает файл
-                CSVWriter writer = new CSVWriter(new FileWriter(accountCsv, true), ',', CSVWriter.NO_QUOTE_CHARACTER);
-                writer.writeNext(new String[]{account.toString()});
-                writer.close();
-            } else {
-                // Создает новый файл
-                CSVWriter writer = new CSVWriter(new FileWriter(accountCsv), ',', CSVWriter.NO_QUOTE_CHARACTER);
-                writer.writeNext(new String[]{account.toString()});
-                writer.close();
-            }
+            String query = "INSERT INTO accounts VALUES (\'"
+                    + account.getAccountNumber()
+                    + "\', \'" + account.getUserId()
+                    + "\', \'" + account.getAccountMoney()
+                    + "\')";
+
+            sqlExec(query);
+            log.info("Аккаунт создан");
         }
     }
 
-    private void deleteAccount() throws IOException {
+    private void deleteAccount() throws SQLException {
         Account delAccount = null;
         List<Account> listAccounts = readAccounts();
         User currentUser = findUser();
-        watchAccounts(currentUser);
         Scanner scanner = new Scanner(System.in);
-        log.info("Введите номер счёта");
-        int currentAccount = scanner.nextInt();
+        if (watchAccounts(currentUser) != 0) {
+            log.info("Введите номер счёта");
+            int currentAccount = scanner.nextInt();
 
-        for (Account account : listAccounts) {
-            if (account.getUserId() == currentUser.getId() &&
-                    account.getAccountNumber() == currentAccount) {
-                delAccount = account;
-            }
-        }
-
-        if (delAccount != null) {
-            listAccounts.remove(delAccount);
-            CSVWriter writer = new CSVWriter(new FileWriter(accountCsv), ',', CSVWriter.NO_QUOTE_CHARACTER);
-            if (!listAccounts.isEmpty()) {
-                for(Account account : listAccounts ) {
-                    writer.writeNext(new String[]{account.toString()});
+            for (Account account : listAccounts) {
+                if (account.getUserId() == currentUser.getId() &&
+                        account.getAccountNumber() == currentAccount) {
+                    delAccount = account;
                 }
             }
-            writer.close();
-            log.info("Аккаунт успешно удалён");
-        } else {
-            throw new IOException("Не найдено такого аккаунта");
-        }
 
+            if (delAccount != null) {
+                String query = "DELETE FROM accounts WHERE accountNumber = "
+                        + delAccount.getAccountNumber();
+                sqlExec(query);
+                log.info("Аккаунт успешно удалён");
+            } else {
+                throw new SQLException("Не найдено такого аккаунта");
+            }
+        }
     }
 
     //Для добавления средств (изменение)
-    private void changeAccount(double acсountMoney) throws IOException {
+    private void changeAccount(double money) throws SQLException {
         Account currentAccount = null;
         List<Account> listAccounts = readAccounts();
         User currentUser = findUser();
-        watchAccounts(currentUser);
-        Scanner scanner = new Scanner(System.in);
-        log.info("Введите номер счёта");
-        String currentAccountNumber = scanner.nextLine();
+        if (watchAccounts(currentUser) != 0) {
+            Scanner scanner = new Scanner(System.in);
+            log.info("Введите номер счёта");
+            String currentAccountNumber = scanner.nextLine();
 
-        for (Account account : listAccounts) {
-            if (account.getUserId() == currentUser.getId() &&
-                    account.getAccountNumber() == Integer.parseInt(currentAccountNumber)) {
-                currentAccount = account;
-            }
-        }
-
-        listAccounts.remove(currentAccount);
-        currentAccount.setAccountMoney(currentAccount.getAccountMoney() + acсountMoney);
-        listAccounts.add(currentAccount);
-
-        if (currentAccount != null) {
-            CSVWriter writer = new CSVWriter(new FileWriter(accountCsv), ',', CSVWriter.NO_QUOTE_CHARACTER);
-            if (!listAccounts.isEmpty()) {
-                for(Account account : listAccounts ) {
-                    writer.writeNext(new String[]{account.toString()});
+            for (Account account : listAccounts) {
+                if (account.getUserId() == currentUser.getId() &&
+                        account.getAccountNumber() == Integer.parseInt(currentAccountNumber)) {
+                    currentAccount = account;
                 }
             }
-            writer.close();
-            log.info("Аккаунт успешно изменён");
-        } else {
-            throw new IOException("Вы ещё не создали аккаунт");
+            String query = "UPDATE accounts SET accountMoney = " +
+                    (currentAccount.getAccountMoney() + money) ;
+            sqlExec(query);
         }
     }
 
@@ -188,10 +165,11 @@ public class AccountManager {
         }
         if (count == 0) {
             log.info("Вы ещё не создали аккаунт");
+            throw new IOException("Вы ешё не создали аккаунт");
         }
     }
 
-    private void watchAccounts(User currentUser) throws IOException {
+    private int watchAccounts(User currentUser) {
         int count = 0;
         List<Account> listAccounts = readAccounts();
         for (Account account : listAccounts) {
@@ -202,15 +180,17 @@ public class AccountManager {
                 log.info("Денежные средства на аккаунте - " + account.getAccountMoney());
             }
         }
-        if (count > 0) {
+        if (count == 0) {
             log.info("Вы ещё не создали аккаунт");
         }
+        return count;
     }
 
-    private void getInformationAboutUsers() throws IOException {
+    private void getInformationAboutUsers() {
         Map<Integer, User> infoUsers = convertListUsersToMap
                 (readUsersWithAccounts(readUsers(), readAccounts()));
         log.info("Список всех пользователей: ");
+        //log.info(readUsers().get(0));
         infoUsers.forEach((key, value) -> {
             log.info("");
             log.info("Пользователь - id = " + value.getId() +
@@ -235,25 +215,75 @@ public class AccountManager {
 
     // Вспомогательные классы
 
-    private int addUserInfo() {
-        Scanner scanner = new Scanner(System.in);
-        log.info("Введите id");
-        String userInfo = scanner.nextLine();
-        return Integer.parseInt(userInfo);
+    private void sqlExec (String query) throws SQLException {
+        DatabaseConnection connection = new DatabaseConnection();
+        Statement statement = connection.getConnection().createStatement();
+        statement.execute(query);
+        connection.getConnection().close();
     }
 
-    private User findUser() throws IOException {
-        int currentUserId = addUserInfo();
-        List listUsers = readUsersWithAccounts(readUsers(), readAccounts());
-        for(Object object : listUsers) {
-            User user = (User) object;
-            if (currentUserId == user.getId()) {
-                log.info("Пользователь находится в базе данных");
-                return user;
+    private User findUser() {
+        User user = new User();
+
+        Scanner scanner = new Scanner(System.in);
+        log.info("Введите id пользователя");
+        int id = scanner.nextInt();
+
+        DatabaseConnection connection = new DatabaseConnection();
+        String query = "select * from users where id = " + id;
+
+        try {
+            Statement statement = connection.getConnection().createStatement();
+            ResultSet resultSet = statement.executeQuery(query);
+            resultSet.next();
+            user.setId(resultSet.getInt("id"));
+            user.setName(resultSet.getString("name"));
+            user.setSurname(resultSet.getString("surname"));
+
+            connection.getConnection().close();
+
+        } catch (SQLException e) {
+            log.info("Запрос не выполнился");
+            e.printStackTrace();
+        } finally {
+            try {
+                connection.getConnection().close();
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
         }
-        log.info("К сожалению, такого пользователя нет в базе данных");
-        return null;
+
+        query = "SELECT * FROM accounts INNER JOIN" +
+                " users ON accounts.userId = users.id WHERE userId = " + id;
+
+        List<Account> listAccounts = new ArrayList<>();
+
+        try {
+            Statement statement = connection.getConnection().createStatement();
+            ResultSet resultSet = statement.executeQuery(query);
+            while (resultSet.next()) {
+                Account account = new Account();
+                account.setAccountNumber(resultSet.getInt("accountNumber"));
+                account.setUserId(resultSet.getInt("userId"));
+                account.setAccountMoney(resultSet.getDouble("accountMoney"));
+                listAccounts.add(account);
+            }
+
+            connection.getConnection().close();
+
+        } catch (SQLException e) {
+            log.info("Запрос не выполнился");
+            e.printStackTrace();
+        } finally {
+            try {
+                connection.getConnection().close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+        user.setAccount(listAccounts);
+        return user;
     }
 
     private Map<Integer, User> convertListUsersToMap(List<User> listUsers) {
@@ -266,7 +296,7 @@ public class AccountManager {
 
     //методы для работы с чтением файлов
 
-    private List<User> readUsersWithAccounts(List<User> listUsers, List<Account> listAccounts) throws IOException {
+    private List<User> readUsersWithAccounts(List<User> listUsers, List<Account> listAccounts) {
         List<Account> userListAccounts = new ArrayList<>();
         for (User user : listUsers) {
             for (Account account : listAccounts) {
@@ -280,7 +310,7 @@ public class AccountManager {
         return listUsers;
     }
 
-    private List<User> readUsers() throws IOException {
+    private List<User> readUsers() {
         List<User> listUsers = new ArrayList<>();
         DatabaseConnection connection = new DatabaseConnection();
 
@@ -294,7 +324,7 @@ public class AccountManager {
                 user.setId(resultSet.getInt("id"));
                 user.setName(resultSet.getString("name"));
                 user.setSurname(resultSet.getString("surname"));
-                log.info(user);
+                listUsers.add(user);
             }
 
             connection.getConnection().close();
@@ -323,11 +353,11 @@ public class AccountManager {
             Statement statement = connection.getConnection().createStatement();
             ResultSet resultSet = statement.executeQuery(query);
             while (resultSet.next()) {
-                User user = new User();
-                user.setId(resultSet.getInt("accountNumber"));
-                user.setName(resultSet.getString("userId"));
-                user.setSurname(resultSet.getString("accountMoney"));
-                log.info(user);
+                Account account = new Account();
+                account.setAccountNumber(resultSet.getInt("accountNumber"));
+                account.setUserId(resultSet.getInt("userId"));
+                account.setAccountMoney(resultSet.getDouble("accountMoney"));
+                listAccounts.add(account);
             }
 
             connection.getConnection().close();
