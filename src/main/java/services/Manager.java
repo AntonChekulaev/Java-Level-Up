@@ -38,7 +38,11 @@ public class Manager {
         int numberManager = scanner.nextInt();
         switch (numberManager) {
             case 1:
-                createUser();
+                try {
+                    createUser();
+                } catch (IOException e) {
+                    log.error("Ошибка в создании пользователя - " + e.getMessage());
+                }
                 break;
             case 2:
                 log.info("Введите id ");
@@ -63,25 +67,30 @@ public class Manager {
 
     // CRUD методы
 
-    private void createUser() {
+    private void createUser() throws IOException {
         User currentUser = new User();
         Scanner scanner = new Scanner(System.in);
         log.info("Введите name, surname");
         String userInfo = scanner.nextLine();
         String[] userInfoList = userInfo.split(", ", 0);
-        currentUser.setName(userInfoList[0]);
-        currentUser.setSurname(userInfoList[1]);
-        String query = "INSERT INTO users (name, surname) VALUES (\'" + currentUser.getName()
-                + "\', \'" + currentUser.getSurname() + "\')";
+        if (userInfoList.length > 1) {
+            currentUser.setName(userInfoList[0]);
+            currentUser.setSurname(userInfoList[1]);
 
-        try {
-            DatabaseConnection connection = new DatabaseConnection();
-            Statement statement = connection.getConnection().createStatement();
-            statement.execute(query);
-            connection.getConnection().close();
-        } catch (SQLException e) {
-            log.info("Запрос не выполнился");
-            e.printStackTrace();
+            String query = "INSERT INTO users (name, surname) VALUES (\'" + currentUser.getName()
+                    + "\', \'" + currentUser.getSurname() + "\')";
+
+            try {
+                DatabaseConnection connection = new DatabaseConnection();
+                Statement statement = connection.getConnection().createStatement();
+                statement.execute(query);
+                connection.getConnection().close();
+            } catch (SQLException e) {
+                log.info("Запрос не выполнился");
+                e.printStackTrace();
+            }
+        } else {
+            throw new IOException("Не хватает данных");
         }
     }
 
@@ -113,7 +122,7 @@ public class Manager {
     }
 
     private List<User> readUsers() {
-        String query = "select * from users";
+        String query = "SELECT * FROM users";
         List<User> listUsers = new ArrayList<>();
 
         try {
