@@ -4,6 +4,8 @@ import org.apache.log4j.Logger;
 import services.AccountManager;
 import services.Manager;
 import services.SecurityGuard;
+import views.UIAccountManager;
+import views.UIManager;
 
 import java.util.Scanner;
 
@@ -27,10 +29,10 @@ public class MainClass {
                     SecurityGuard security = new SecurityGuard();
                     break;
                 case 2:
-                    Manager manager = new Manager();
+                    UIManager manager = new UIManager();
                     break;
                 case 3:
-                    AccountManager accountManager = new AccountManager();
+                    UIAccountManager accountManager = new UIAccountManager();
                     break;
             }  
 
