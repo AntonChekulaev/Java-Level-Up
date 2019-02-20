@@ -58,15 +58,15 @@ public class AccountManager {
                 log.info("Введите количество внесённых средств в рублях: ");
                 try {
                     changeAccount(scanner.nextInt());
-                } catch (SQLException e) {
-                    e.printStackTrace();
+                } catch (Exception e) {
+                    log.error("Ошибка в изменении аккаунта - " + e.getMessage());
                 }
                 break;
             case 4:
                 try {
                     watchAccounts();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                } catch (IOException | SQLException e) {
+                    log.error("Ошибка в просмотре аккаунта - " + e.getMessage());
                 }
                 break;
             case 5:
@@ -142,16 +142,21 @@ public class AccountManager {
             for (Account account : listAccounts) {
                 if (account.getUserId() == currentUser.getId() &&
                         account.getAccountNumber() == Integer.parseInt(currentAccountNumber)) {
-                    currentAccount = account;
+                        currentAccount = account;
                 }
             }
-            String query = "UPDATE accounts SET accountMoney = " +
-                    (currentAccount.getAccountMoney() + money) ;
-            sqlExec(query);
+            if (currentAccount != null) {
+                String query = "UPDATE accounts SET accountMoney = accountMoney + " + money
+                        + "WHERE accountNumber = " + currentAccount.getAccountNumber();
+                sqlExec(query);
+            } else {
+                log.info("Аккаунт не найден");
+            }
+
         }
     }
 
-    private void watchAccounts() throws IOException {
+    private void watchAccounts() throws IOException, SQLException {
         int count = 0;
         User currentUser = findUser();
         List<Account> listAccounts = readAccounts();
@@ -164,26 +169,8 @@ public class AccountManager {
             }
         }
         if (count == 0) {
-            log.info("Вы ещё не создали аккаунт");
             throw new IOException("Вы ешё не создали аккаунт");
         }
-    }
-
-    private int watchAccounts(User currentUser) {
-        int count = 0;
-        List<Account> listAccounts = readAccounts();
-        for (Account account : listAccounts) {
-            if (currentUser.getId() == account.getUserId()) {
-                count = count + 1;
-                log.info("Профиль " + currentUser.getSurname() + " :");
-                log.info("Номер аккаунта - " + account.getAccountNumber());
-                log.info("Денежные средства на аккаунте - " + account.getAccountMoney());
-            }
-        }
-        if (count == 0) {
-            log.info("Вы ещё не создали аккаунт");
-        }
-        return count;
     }
 
     private void getInformationAboutUsers() {
@@ -215,6 +202,23 @@ public class AccountManager {
 
     // Вспомогательные классы
 
+    private int watchAccounts(User currentUser) {
+        int count = 0;
+        List<Account> listAccounts = readAccounts();
+        for (Account account : listAccounts) {
+            if (currentUser.getId() == account.getUserId()) {
+                count = count + 1;
+                log.info("Профиль " + currentUser.getSurname() + " :");
+                log.info("Номер аккаунта - " + account.getAccountNumber());
+                log.info("Денежные средства на аккаунте - " + account.getAccountMoney());
+            }
+        }
+        if (count == 0) {
+            log.info("Вы ещё не создали аккаунт");
+        }
+        return count;
+    }
+
     private void sqlExec (String query) throws SQLException {
         DatabaseConnection connection = new DatabaseConnection();
         Statement statement = connection.getConnection().createStatement();
@@ -222,7 +226,7 @@ public class AccountManager {
         connection.getConnection().close();
     }
 
-    private User findUser() {
+    private User findUser() throws SQLException {
         User user = new User();
 
         Scanner scanner = new Scanner(System.in);
@@ -230,21 +234,22 @@ public class AccountManager {
         int id = scanner.nextInt();
 
         DatabaseConnection connection = new DatabaseConnection();
-        String query = "select * from users where id = " + id;
+        String query = "SELECT * FROM users WHERE id = " + id;
 
         try {
             Statement statement = connection.getConnection().createStatement();
             ResultSet resultSet = statement.executeQuery(query);
-            resultSet.next();
-            user.setId(resultSet.getInt("id"));
-            user.setName(resultSet.getString("name"));
-            user.setSurname(resultSet.getString("surname"));
-
+             if (resultSet.next()) {
+                 user.setId(resultSet.getInt("id"));
+                 user.setName(resultSet.getString("name"));
+                 user.setSurname(resultSet.getString("surname"));
+             } else {
+                 throw new SQLException("Нет такого пользователя");
+             }
             connection.getConnection().close();
 
         } catch (SQLException e) {
-            log.info("Запрос не выполнился");
-            e.printStackTrace();
+            log.info("Запрос не выполнился, " + e.getMessage());
         } finally {
             try {
                 connection.getConnection().close();
@@ -314,7 +319,7 @@ public class AccountManager {
         List<User> listUsers = new ArrayList<>();
         DatabaseConnection connection = new DatabaseConnection();
 
-        String query = "select * from users";
+        String query = "SELECT * FROM users";
 
         try {
             Statement statement = connection.getConnection().createStatement();
@@ -347,7 +352,7 @@ public class AccountManager {
         List<Account> listAccounts = new ArrayList<>();
         DatabaseConnection connection = new DatabaseConnection();
 
-        String query = "select * from accounts";
+        String query = "SELECT * FROM accounts";
 
         try {
             Statement statement = connection.getConnection().createStatement();
