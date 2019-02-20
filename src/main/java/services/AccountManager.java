@@ -2,9 +2,8 @@ package services;
 
 import exceptions.MyException;
 import main.DatabaseConnection;
-import pojo.Account;
-import pojo.User;
-import au.com.bytecode.opencsv.CSVWriter;
+import model.Account;
+import model.User;
 
 import java.io.*;
 import java.sql.ResultSet;
@@ -20,8 +19,10 @@ public class AccountManager {
 
     String csv = "src/main/resources/data.csv";
     String accountCsv = "src/main/resources/account.csv";
+    DatabaseConnection connection;
 
     public AccountManager() {
+        connection = new DatabaseConnection();
         hello();
     }
 
@@ -220,7 +221,6 @@ public class AccountManager {
     }
 
     private void sqlExec (String query) throws SQLException {
-        DatabaseConnection connection = new DatabaseConnection();
         Statement statement = connection.getConnection().createStatement();
         statement.execute(query);
         connection.getConnection().close();
@@ -233,7 +233,6 @@ public class AccountManager {
         log.info("Введите id пользователя");
         int id = scanner.nextInt();
 
-        DatabaseConnection connection = new DatabaseConnection();
         String query = "SELECT * FROM users WHERE id = " + id;
 
         try {
@@ -317,7 +316,6 @@ public class AccountManager {
 
     private List<User> readUsers() {
         List<User> listUsers = new ArrayList<>();
-        DatabaseConnection connection = new DatabaseConnection();
 
         String query = "SELECT * FROM users";
 
@@ -350,7 +348,6 @@ public class AccountManager {
 
     private List<Account> readAccounts() {
         List<Account> listAccounts = new ArrayList<>();
-        DatabaseConnection connection = new DatabaseConnection();
 
         String query = "SELECT * FROM accounts";
 

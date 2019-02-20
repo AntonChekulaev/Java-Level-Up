@@ -1,14 +1,10 @@
 package main;
 
 import org.apache.log4j.Logger;
-import pojo.User;
 import services.AccountManager;
 import services.Manager;
 import services.SecurityGuard;
 
-import java.io.*;
-import java.sql.*;
-import java.util.Properties;
 import java.util.Scanner;
 
 public class MainClass {

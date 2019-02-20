@@ -2,11 +2,7 @@ package services;
 
 
 import main.DatabaseConnection;
-import pojo.User;
-import au.com.bytecode.opencsv.CSVReader;
-import au.com.bytecode.opencsv.CSVWriter;
-import au.com.bytecode.opencsv.bean.ColumnPositionMappingStrategy;
-import au.com.bytecode.opencsv.bean.CsvToBean;
+import model.User;
 import org.apache.log4j.Logger;
 
 import java.io.*;
@@ -22,9 +18,11 @@ public class Manager {
     private static final Logger log = Logger.getLogger(Manager.class);
     
     String csv = "src/main/resources/data.csv";
+    DatabaseConnection connection;
     
     public Manager() {      
-       hello();            
+        this.connection = new DatabaseConnection();
+        hello();
     }
 
     private void hello(){
@@ -81,7 +79,6 @@ public class Manager {
                     + "\', \'" + currentUser.getSurname() + "\')";
 
             try {
-                DatabaseConnection connection = new DatabaseConnection();
                 Statement statement = connection.getConnection().createStatement();
                 statement.execute(query);
                 connection.getConnection().close();
@@ -97,7 +94,6 @@ public class Manager {
     private void deleteUser(int id) {
         String query = "DELETE FROM users WHERE id = " + id;
         try {
-            DatabaseConnection connection = new DatabaseConnection();
             Statement statement = connection.getConnection().createStatement();
             statement.execute(query);
             connection.getConnection().close();
@@ -111,7 +107,6 @@ public class Manager {
         String query = "UPDATE users SET name = \'" + name +
                 "\', surname = \'" + surname + "\' WHERE id = " + id;
         try {
-            DatabaseConnection connection = new DatabaseConnection();
             Statement statement = connection.getConnection().createStatement();
             statement.execute(query);
             connection.getConnection().close();
@@ -126,7 +121,6 @@ public class Manager {
         List<User> listUsers = new ArrayList<>();
 
         try {
-            DatabaseConnection connection = new DatabaseConnection();
             Statement statement = connection.getConnection().createStatement();
             ResultSet resultSet = statement.executeQuery(query);
             while (resultSet.next()) {
